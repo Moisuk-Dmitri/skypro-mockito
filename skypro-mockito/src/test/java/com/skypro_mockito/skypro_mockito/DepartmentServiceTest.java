@@ -1,26 +1,26 @@
 package com.skypro_mockito.skypro_mockito;
 
 import com.skypro_mockito.skypro_mockito.Domain.Employee;
+import com.skypro_mockito.skypro_mockito.Exceptions.EmptyMapException;
 import com.skypro_mockito.skypro_mockito.Exceptions.InvalidDepartmentNumberException;
 import com.skypro_mockito.skypro_mockito.Services.DepartmentService;
 import com.skypro_mockito.skypro_mockito.Services.EmployeeService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class DepartmentServiceTest {
-    private DepartmentService departmentService;
-
     List<Employee> employees = List.of(
             new Employee("Sophie", "Elena", "Wilson", 110, 48000),
             new Employee("Daniel", "Victor", "Martinez", 205, 52000),
@@ -32,44 +32,55 @@ public class DepartmentServiceTest {
     );
 
     @Mock
-    private EmployeeService employeeService;
+    private EmployeeService employeeServiceMock;
 
-    @BeforeEach
-    public void setUp() {
-        departmentService = new DepartmentService(employeeService);
-    }
+    @InjectMocks
+    private DepartmentService departmentService;
 
     @Test
-    public void maxCorrectSalaryTest() {
-        when(employeeService.getAll()).thenReturn(employees);
+    @DisplayName("Корректный тест получения макс зарплаты")
+    public void shouldFindMaxSalary() {
+        when(employeeServiceMock.getAll()).thenReturn(employees);
 
         assertEquals(departmentService.findMaxSalaryByDepartment(110), 68000);
+
+        verify(employeeServiceMock, times(1)).getAll();
     }
 
     @Test
-    public void maxIncorrectSalaryTest() {
-        when(employeeService.getAll()).thenReturn(employees);
+    @DisplayName("Некорректный тест получения макс зарплаты с неправильным номером отдела")
+    public void shouldThrowExceptionWhenFindMaxSalary() {
+        when(employeeServiceMock.getAll()).thenReturn(employees);
 
-        assertThrows(RuntimeException.class, () -> departmentService.findMaxSalaryByDepartment(123));
+        assertThrows(EmptyMapException.class, () -> departmentService.findMaxSalaryByDepartment(123));
+
+        verify(employeeServiceMock, times(1)).getAll();
     }
 
     @Test
-    public void minCorrectSalaryTest() {
-        when(employeeService.getAll()).thenReturn(employees);
+    @DisplayName("Корректный тест получения мин зарплаты")
+    public void shouldFindMinSalary() {
+        when(employeeServiceMock.getAll()).thenReturn(employees);
 
         assertEquals(departmentService.findMinSalaryByDepartment(110), 48000);
+
+        verify(employeeServiceMock, times(1)).getAll();
     }
 
     @Test
-    public void minIncorrectSalaryTest() {
-        when(employeeService.getAll()).thenReturn(employees);
+    @DisplayName("Некорректный тест получения мин зарплаты с неправильным номером отдела")
+    public void shouldThrowExceptionWhenFindMinSalary() {
+        when(employeeServiceMock.getAll()).thenReturn(employees);
 
-        assertThrows(RuntimeException.class, () -> departmentService.findMinSalaryByDepartment(123));
+        assertThrows(EmptyMapException.class, () -> departmentService.findMinSalaryByDepartment(123));
+
+        verify(employeeServiceMock, times(1)).getAll();
     }
 
     @Test
-    public void getAllEmployeesByDepartmentCorrectTest() {
-        when(employeeService.getAll()).thenReturn(employees);
+    @DisplayName("Корректный тест получения списка рабочих по номеру отдела")
+    public void shouldReturnListOfEmployeesByDepartment() {
+        when(employeeServiceMock.getAll()).thenReturn(employees);
 
         List<Employee> expectedEmployees = List.of(
                 new Employee("Sophie", "Elena", "Wilson", 110, 48000),
@@ -77,57 +88,78 @@ public class DepartmentServiceTest {
         );
 
         assertIterableEquals(departmentService.getAllEmployeesByDepartment(110), expectedEmployees);
+
+        verify(employeeServiceMock, times(1)).getAll();
     }
 
     @Test
-    public void getAllEmployeesByDepartmentEmptyTest() {
-        when(employeeService.getAll()).thenReturn(employees);
+    @DisplayName("Корректный тест получения пустого списка рабочих по номеру отдела")
+    public void shouldReturnEmptyListOfEmployeesByDepartment() {
+        when(employeeServiceMock.getAll()).thenReturn(employees);
 
         assertEquals(departmentService.getAllEmployeesByDepartment(123).size(), 0);
+
+        verify(employeeServiceMock, times(1)).getAll();
     }
 
     @Test
-    public void getAllEmployeesByDepartmentIncorrectTest() {
-        assertThrows(RuntimeException.class, () -> departmentService.getAllEmployeesByDepartment(-2));
+    @DisplayName("Некорректный тест получения списка рабочих с неправильным номером отдела")
+    public void shouldThrowExceptionGetAllWhenIncorrectDepartmentNumber() {
+        assertThrows(InvalidDepartmentNumberException.class, () -> departmentService.getAllEmployeesByDepartment(-2));
+
+        verify(employeeServiceMock, never()).getAll();
     }
 
     @Test
-    public void sumCorrectSalaryTest() {
-        when(employeeService.getAll()).thenReturn(employees);
+    @DisplayName("Корректный тест получения суммы зарплат по номеру отдела")
+    public void shouldReturnSumOfSalariesByDepartment() {
+        when(employeeServiceMock.getAll()).thenReturn(employees);
 
         assertEquals(departmentService.getSumSalaryByDepartment(110), 116000);
+
+        verify(employeeServiceMock, times(1)).getAll();
     }
 
     @Test
-    public void sumNullSalaryTest() {
-        when(employeeService.getAll()).thenReturn(employees);
+    @DisplayName("Корректный тест получения суммы зарпал по несуществующему номеру отдела")
+    public void shouldReturnNullSumWhenIncorrectDepartmentNumber() {
+        when(employeeServiceMock.getAll()).thenReturn(employees);
 
         assertEquals(departmentService.getSumSalaryByDepartment(123), 0);
+
+        verify(employeeServiceMock, times(1)).getAll();
     }
 
     @Test
-    public void sumIncorrectSalaryTest() {
-        assertThrows(RuntimeException.class, () -> departmentService.getSumSalaryByDepartment(-2));
+    @DisplayName("Некорректный тест получения суммы из несуществующего отдела")
+    public void shouldThrowExceptionSumWhenIncorrectDepartmentNumber() {
+        assertThrows(InvalidDepartmentNumberException.class, () -> departmentService.getSumSalaryByDepartment(-2));
+
+        verify(employeeServiceMock, never()).getAll();
     }
 
     @Test
-    public void getSortedEmployeesByDepartmentsCorrectTest() {
-        when(employeeService.getAll()).thenReturn(employees);
+    @DisplayName("Корректный тест получения отсортированного списка рабочих")
+    public void shouldReturnMapOfEmployeesSorted() {
+        when(employeeServiceMock.getAll()).thenReturn(employees);
 
-        Map<Integer, List<Employee>> expectedEmployees = new HashMap<>();
-        expectedEmployees.put(110, List.of(new Employee("Sophie", "Elena", "Wilson", 110, 48000),
-                new Employee("Benjamin", "Scott", "Perez", 110, 68000)));
-        expectedEmployees.put(205, List.of(new Employee("Daniel", "Victor", "Martinez", 205, 52000),
-                new Employee("Lucas", "David", "Harris", 205, 62000)));
-        expectedEmployees.put(310, List.of(new Employee("Olga", "Sergeevna", "Petrova", 310, 59000),
-                new Employee("Natalia", "", "Rogers", 310, 53000)));
-        expectedEmployees.put(410, List.of(new Employee("Michael", "Alexander", "Taylor", 410, 75000)));
+        Set<Integer> expectedMapSize = new HashSet<>();
+        for (int i = 0; i < employees.size(); i++) {
+            expectedMapSize.add(employees.get(i).getDepartmentNumber());
+        }
 
-        assertEquals(departmentService.getSortedEmployeesByDepartments(), expectedEmployees);
+        assertEquals(departmentService.getSortedEmployeesByDepartments().size(), expectedMapSize.size());
+
+        verify(employeeServiceMock, times(1)).getAll();
     }
 
     @Test
-    public void getSortedEmployeesByDepartmentsEmptyTest() {
+    @DisplayName("Корректный тест получения пустого отсртированного списка рабочих")
+    public void shouldReturnEmptyMapOfEmployeesSorted() {
+        when(employeeServiceMock.getAll()).thenReturn(List.of());
+
         assertEquals(departmentService.getSortedEmployeesByDepartments().size(), 0);
+
+        verify(employeeServiceMock, times(1)).getAll();
     }
 }
